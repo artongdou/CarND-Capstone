@@ -3,6 +3,7 @@
 import rospy
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
+from scipy.spatial import KDTree
 
 import math
 
@@ -33,20 +34,37 @@ class WaypointUpdater(object):
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
 
-
+        self.pose = None
+        self.base_waypoints = None
+        self.base_waypoints_2d = None
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
-        # TODO: Add other member variables you need below
+        self.loop()
 
-        rospy.spin()
+    def loop(self):
+        rate = rospy.Rate(50)
+        while not rospy.is_shutdown():
+            # print rospy.Time.now().to_sec()
+            if self.pose and self.base_waypoints_2d:
+                wps = Lane()
+                wps.header = self.pose.header
+                closest_index = 0
+                wps.waypoints = self.base_waypoints.waypoints[closest_index: closest_index+LOOKAHEAD_WPS]
+                self.final_waypoints_pub.publish(wps)
+            rate.sleep()
 
     def pose_cb(self, msg):
-        # TODO: Implement
-        pass
+        self.pose = msg
+        rospy.loginfo("current pose has been received")
 
     def waypoints_cb(self, waypoints):
-        # TODO: Implement
-        pass
+        if not self.base_waypoints or not self.base_waypoints_2d:
+            base_waypoints_2d = [[wp.pose.pose.position.x, wp.pose.pose.position.y] for wp in waypoints.waypoints]
+            self.base_waypoints = waypoints
+            self.base_waypoints_2d = KDTree(base_waypoints_2d)
+            rospy.loginfo("base_waypoints received successfully.")
+        else:
+            rospy.logwarn("base_waypoints has already been received and initialized.")
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
