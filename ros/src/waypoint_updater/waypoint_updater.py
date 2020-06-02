@@ -28,7 +28,7 @@ LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this n
 
 class WaypointUpdater(object):
     def __init__(self):
-        rospy.init_node('waypoint_updater')
+        rospy.init_node('waypoint_updater', log_level = rospy.INFO)
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
@@ -38,6 +38,7 @@ class WaypointUpdater(object):
         self.pose = None
         self.base_waypoints = None
         self.base_waypoints_2d = None
+        self.base_waypoints_tree = None
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         self.loop()
@@ -46,18 +47,18 @@ class WaypointUpdater(object):
         rate = rospy.Rate(50)
         while not rospy.is_shutdown():
             # print rospy.Time.now().to_sec()
-            if self.pose and self.base_waypoints_2d:
+            if self.pose and self.base_waypoints_2d and self.base_waypoints_tree:
                 wps = Lane()
                 wps.header = self.pose.header
                 closest_wp_idx = self.get_closest_wp_idx()
-                wps.waypoints = self.base_waypoints.waypoints[closest_index: closest_index+LOOKAHEAD_WPS]
+                wps.waypoints = self.base_waypoints.waypoints[closest_wp_idx: closest_wp_idx+LOOKAHEAD_WPS]
                 self.final_waypoints_pub.publish(wps)
             rate.sleep()
     
     def get_closest_wp_idx(self):
         x = self.pose.pose.position.x
         y = self.pose.pose.position.y
-        _, closest_wp_idx = self.base_waypoints_2d.query(np.array([x, y]), 1)
+        _, closest_wp_idx = self.base_waypoints_tree.query(np.array([x, y]), 1)
         prev_wp_idx = closest_wp_idx - 1
 
         closest_coord = self.base_waypoints_2d[closest_wp_idx]
@@ -77,14 +78,14 @@ class WaypointUpdater(object):
 
     def pose_cb(self, msg):
         self.pose = msg
-        rospy.loginfo("current pose has been received")
+        rospy.logdebug("current pose has been received: {},{}".format(msg.pose.position.x, msg.pose.position.y))
 
     def waypoints_cb(self, waypoints):
         if not self.base_waypoints or not self.base_waypoints_2d:
-            base_waypoints_2d = [[wp.pose.pose.position.x, wp.pose.pose.position.y] for wp in waypoints.waypoints]
+            self.base_waypoints_2d = [[wp.pose.pose.position.x, wp.pose.pose.position.y] for wp in waypoints.waypoints]
             self.base_waypoints = waypoints
-            self.base_waypoints_2d = KDTree(base_waypoints_2d)
-            rospy.loginfo("base_waypoints received successfully.")
+            self.base_waypoints_tree = KDTree(self.base_waypoints_2d)
+            rospy.logdebug("base_waypoints received successfully.")
         else:
             rospy.logwarn("base_waypoints has already been received and initialized.")
 
