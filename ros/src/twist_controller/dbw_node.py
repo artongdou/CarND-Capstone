@@ -53,26 +53,27 @@ class DBWNode(object):
         self.brake_pub = rospy.Publisher('/vehicle/brake_cmd',
                                          BrakeCmd, queue_size=1)
 
-        # TODO: Create `Controller` object
-        self.controller = Controller(wheel_base, steer_ratio, 0., max_lat_accel, max_steer_angle)
 
         rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb)
-        rospy.Subscriber('/current_veolocity', TwistStamped, self.current_velocity_cb)
+        rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb)
         rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cmd_cb)
 
-        self.dbw_enabled = None
+        self.dbw_enabled = False
         self.curr_vel = None
         self.twist_cmd = None
+        self.rate = 50 #Hz
+
+        self.controller = Controller(wheel_base, steer_ratio, 0., max_lat_accel, max_steer_angle, self.rate, vehicle_mass, decel_limit, accel_limit)
 
         self.loop()
 
     def loop(self):
-        rate = rospy.Rate(50) # 50Hz
+        rate = rospy.Rate(self.rate)
         while not rospy.is_shutdown():
             # TODO: Get predicted throttle, brake, and steering using `twist_controller`
             # You should only publish the control commands if dbw is enabled
-            throttle, brake, steering = self.controller.control(self.twist_cmd,
-                                                                self.curr_vel,
+            throttle, brake, steering = self.controller.control(self.twist_cmd, # geometry_msgs/Twist
+                                                                self.curr_vel,  # geometry_msgs/Twist
                                                                 self.dbw_enabled)
             # print self.dbw_enabled
             if self.dbw_enabled:
@@ -85,6 +86,7 @@ class DBWNode(object):
 
     def current_velocity_cb(self, msg):
         # Discard header info: msg.header
+        # rospy.loginfo("/current_velocity received")
         self.curr_vel = msg.twist
 
     def twist_cmd_cb(self, msg):
