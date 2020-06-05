@@ -31,6 +31,7 @@ that we have created in the `__init__` function.
 
 '''
 
+
 class DBWNode(object):
     def __init__(self):
         rospy.init_node('dbw_node', log_level=rospy.DEBUG)
@@ -53,28 +54,28 @@ class DBWNode(object):
         self.brake_pub = rospy.Publisher('/vehicle/brake_cmd',
                                          BrakeCmd, queue_size=1)
 
-
         rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb)
-        rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb)
+        rospy.Subscriber('/current_velocity', TwistStamped,
+                         self.current_velocity_cb)
         rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cmd_cb)
 
         self.dbw_enabled = False
         self.curr_vel = None
         self.twist_cmd = None
-        self.rate = 50 #Hz
 
-        self.controller = Controller(wheel_base, steer_ratio, 0., max_lat_accel, max_steer_angle, self.rate, vehicle_mass, decel_limit, accel_limit)
+        self.controller = Controller(wheel_base, steer_ratio, 0., max_lat_accel,
+                                     max_steer_angle, vehicle_mass, decel_limit, accel_limit, wheel_radius)
 
         self.loop()
 
     def loop(self):
-        rate = rospy.Rate(self.rate)
+        rate = rospy.Rate(50)  # 50Hz
         while not rospy.is_shutdown():
-            # TODO: Get predicted throttle, brake, and steering using `twist_controller`
             # You should only publish the control commands if dbw is enabled
-            throttle, brake, steering = self.controller.control(self.twist_cmd, # geometry_msgs/Twist
-                                                                self.curr_vel,  # geometry_msgs/Twist
-                                                                self.dbw_enabled)
+            if not None in (self.curr_vel, self.twist_cmd):
+                throttle, brake, steering = self.controller.control(self.twist_cmd,  # geometry_msgs/Twist
+                                                                    self.curr_vel,  # geometry_msgs/Twist
+                                                                    self.dbw_enabled)
             # print self.dbw_enabled
             if self.dbw_enabled:
                 self.publish(throttle, brake, steering)
