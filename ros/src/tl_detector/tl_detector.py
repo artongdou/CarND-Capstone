@@ -143,7 +143,7 @@ class TLDetector(object):
 
         """
         closest_light = None
-        closest_light_wp_idx = None
+        closest_stopline_wp_idx = None
 
         # List of positions that correspond to the line to stop in front of for a given intersection
         stop_line_positions = self.config['stop_line_positions']
@@ -154,18 +154,18 @@ class TLDetector(object):
             # iterate through the ground truth location of all traffic lights
             for i, light in enumerate(self.lights):
                 stop_line = stop_line_positions[i]
-                stop_line_wp_idx = self.get_closest_waypoint(stop_line[0], stop_line[1])
-                dist = stop_line_wp_idx - car_wp_idx
+                stopline_wp_idx = self.get_closest_waypoint(stop_line[0], stop_line[1])
+                dist = stopline_wp_idx - car_wp_idx
                 if dist >= 0 and dist < min_dist:
                     min_dist = dist
                     closest_light = light
-                    closest_light_wp_idx = i
+                    closest_stopline_wp_idx = stopline_wp_idx
 
         #TODO find the closest visible traffic light (if one exists)
 
         if light:
             state = self.get_light_state(closest_light)
-            return closest_light_wp_idx, state
+            return closest_stopline_wp_idx, state
         self.base_waypoints = None
         return -1, TrafficLight.UNKNOWN
 
