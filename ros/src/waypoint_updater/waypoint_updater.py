@@ -50,12 +50,23 @@ class WaypointUpdater(object):
         while not rospy.is_shutdown():
             # print rospy.Time.now().to_sec()
             if self.pose and self.base_waypoints_2d and self.base_waypoints_tree:
-                wps = Lane()
-                wps.header = self.pose.header
-                closest_wp_idx = self.get_closest_wp_idx()
-                wps.waypoints = self.base_waypoints.waypoints[closest_wp_idx: closest_wp_idx+LOOKAHEAD_WPS]
-                self.final_waypoints_pub.publish(wps)
+                self.final_waypoints_pub.publish(self.generate_lane())
             rate.sleep()
+
+    def generate_lane(self):
+        lane = Lane()
+
+        closest_wp_idx = self.get_closest_wp_idx()
+        farthest_wp_idx = closest_wp_idx + LOOKAHEAD_WPS
+        initial_wps = self.base_waypoints.waypoints[closest_wp_idx: farthest_wp_idx]
+
+        if self.traffic_wp_idx == -1 or self.traffic_wp_idx > farthest_wp_idx:
+            lane.waypoints = initial_wps
+        else:
+            lane.waypoints = self.decelerate_wps(initial_wps)
+        
+        return lane
+
     
     def get_closest_wp_idx(self):
         x = self.pose.pose.position.x
@@ -92,7 +103,7 @@ class WaypointUpdater(object):
             rospy.logwarn("base_waypoints has already been received and initialized.")
 
     def traffic_cb(self, msg):
-        self.traffic_wp_idx = msg
+        self.traffic_wp_idx = msg.data
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
