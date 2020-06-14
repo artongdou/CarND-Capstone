@@ -110,7 +110,7 @@ class TLDetector(object):
         else:
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
         self.state_count += 1
-        rospy.loginfo("last_state: {}, state_count: {}, state: {}, last_wp: {}".format(self.last_state, self.state_count, self.state, self.last_wp))
+        rospy.logdebug("last_state: {}, state_count: {}, state: {}, last_wp: {}".format(self.last_state, self.state_count, self.state, self.last_wp))
 
     def get_closest_waypoint(self, x, y):
         """Identifies the closest path waypoint to the given position
@@ -161,7 +161,6 @@ class TLDetector(object):
         stop_line_positions = self.config['stop_line_positions']
         if(self.pose):
             car_wp_idx = self.get_closest_waypoint(self.pose.position.x, self.pose.position.y)
-            rospy.loginfo(len(self.base_waypoints))
             min_dist = len(self.base_waypoints) # set to maximum
             # iterate through the ground truth location of all traffic lights
             for i, light in enumerate(self.lights):
@@ -176,7 +175,6 @@ class TLDetector(object):
         #TODO find the closest visible traffic light (if one exists)
 
         if closest_light:
-            rospy.loginfo(closest_light)
             state = self.get_light_state(closest_light)
             return closest_stopline_wp_idx, state
         # self.base_waypoints = None
