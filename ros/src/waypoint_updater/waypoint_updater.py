@@ -35,6 +35,8 @@ class WaypointUpdater(object):
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
         rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
 
+        self.decel_limit = rospy.get_param('~decel_limit', -5)
+
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
 
         self.pose = None
@@ -60,13 +62,25 @@ class WaypointUpdater(object):
         farthest_wp_idx = closest_wp_idx + LOOKAHEAD_WPS
         initial_wps = self.base_waypoints.waypoints[closest_wp_idx: farthest_wp_idx]
 
-        if self.traffic_wp_idx == -1 or self.traffic_wp_idx > farthest_wp_idx:
+        if self.stopline_wp_idx == -1 or self.stopline_wp_idx > farthest_wp_idx:
             lane.waypoints = initial_wps
         else:
-            lane.waypoints = self.decelerate_wps(initial_wps)
+            lane.waypoints = self.decelerate_wps(initial_wps, closest_wp_idx)
         
         return lane
-
+    
+    def decelerate_wps(self, initial_wps, closest_wp_idx):
+        waypoints = []
+        for i, wp in enumerate(initial_wps):
+            p = Waypoint()
+            p.pose = wp.pose
+            stop_idx = max(self.stopline_wp_idx - closest_wp_idx - 2 ,0)
+            vel = math.sqrt(2*self.decel_limit*self.distance(initial_wps, i, stop_idx))
+            if vel < 1.:
+                vel = 0.
+            p.twist.twist.linear.x = min(vel, wp.twist.twist.linear.x)
+            waypoints.append(p)
+        return waypoints
     
     def get_closest_wp_idx(self):
         x = self.pose.pose.position.x
@@ -103,7 +117,7 @@ class WaypointUpdater(object):
             rospy.logwarn("base_waypoints has already been received and initialized.")
 
     def traffic_cb(self, msg):
-        self.traffic_wp_idx = msg.data
+        self.stopline_wp_idx = msg.data
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
