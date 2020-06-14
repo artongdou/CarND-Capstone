@@ -29,7 +29,7 @@ LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this n
 
 class WaypointUpdater(object):
     def __init__(self):
-        rospy.init_node('waypoint_updater', log_level = rospy.INFO)
+        rospy.init_node('waypoint_updater', log_level = rospy.DEBUG)
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
@@ -44,6 +44,7 @@ class WaypointUpdater(object):
         self.base_waypoints_2d = None
         self.base_waypoints_tree = None
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
+        self.stopline_wp_idx = None
 
         self.loop()
 
@@ -51,7 +52,7 @@ class WaypointUpdater(object):
         rate = rospy.Rate(50)
         while not rospy.is_shutdown():
             # print rospy.Time.now().to_sec()
-            if self.pose and self.base_waypoints_2d and self.base_waypoints_tree:
+            if self.pose and self.base_waypoints_2d and self.base_waypoints_tree and self.stopline_wp_idx:
                 self.final_waypoints_pub.publish(self.generate_lane())
             rate.sleep()
 
@@ -62,6 +63,7 @@ class WaypointUpdater(object):
         farthest_wp_idx = closest_wp_idx + LOOKAHEAD_WPS
         initial_wps = self.base_waypoints.waypoints[closest_wp_idx: farthest_wp_idx]
 
+        rospy.loginfo("stopline_wp_idx = {}".format(self.stopline_wp_idx))
         if self.stopline_wp_idx == -1 or self.stopline_wp_idx > farthest_wp_idx:
             lane.waypoints = initial_wps
         else:
@@ -75,7 +77,9 @@ class WaypointUpdater(object):
             p = Waypoint()
             p.pose = wp.pose
             stop_idx = max(self.stopline_wp_idx - closest_wp_idx - 2 ,0)
-            vel = math.sqrt(2*self.decel_limit*self.distance(initial_wps, i, stop_idx))
+            dist = self.distance(initial_wps, i, stop_idx)
+            rospy.logdebug("distance = {}, decel_limit = {}".format(dist, self.decel_limit))
+            vel = math.sqrt(2.*math.fabs(self.decel_limit)*dist)
             if vel < 1.:
                 vel = 0.
             p.twist.twist.linear.x = min(vel, wp.twist.twist.linear.x)
