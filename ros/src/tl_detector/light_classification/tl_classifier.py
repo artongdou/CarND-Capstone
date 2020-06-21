@@ -7,7 +7,8 @@ import rospy
 
 class TLClassifier(object):
     def __init__(self):
-        PATH_TO_GRAPH = "/home/student/CarND-Capstone/ros/src/tl_detector/light_classification/ssd_inception_v2_sim/frozen_inference_graph.pb"
+#         PATH_TO_GRAPH = "/home/student/CarND-Capstone/ros/src/tl_detector/light_classification/ssd_inception_v2_sim/frozen_inference_graph.pb"
+        PATH_TO_GRAPH = "/home/workspace/CarND-Capstone/ros/src/tl_detector/light_classification/ssd_inception_v2_sim/frozen_inference_graph.pb"
         self.graph = tf.Graph()
         self.threshold = .5
 
@@ -50,8 +51,8 @@ class TLClassifier(object):
         scores = np.squeeze(scores)
         classes = np.squeeze(classes).astype(np.int32)
 
-        print('SCORES: ', scores[0])
-        print('CLASSES: ', classes[0])
+        # print('SCORES: ', scores[0])
+        # print('CLASSES: ', classes[0])
 
         if scores[0] > self.threshold:
             if classes[0] == 1:
@@ -64,4 +65,5 @@ class TLClassifier(object):
                 print('YELLOW')
                 return TrafficLight.YELLOW
 
+        print("UNKNOWN")
         return TrafficLight.UNKNOWN
