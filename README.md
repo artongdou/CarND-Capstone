@@ -90,7 +90,7 @@ eval_specs.append(
           exporters=exporter,
           throttle_secs=864000))
 ```
-5. It's possible to train in tensorflow `1.14` and freeze the graph in `1.4` to be satisfy the Udacity requirement. All you need to do is obtain the `.config` and `model.ckpt`. Create a new conda environment with tensorflow `1.4` installed. Checkout commit `f7e99c08` in `models` (thanks to [this post](https://github.com/alex-lechner/Traffic-Light-Classification) pointing out the compatible version) and follow the instructions in `/model/research/object_detection/g3doc/exporting_models.md` to freeze the graph, which can then be deployed to the project.
+5. It's possible to train in tensorflow `1.14` and freeze the graph in `1.4` to satisfy the Udacity requirement. All you need to do is obtain the `.config` and `model.ckpt`. Create a new conda environment with tensorflow `1.4` installed. Checkout commit `f7e99c08` in `models` (thanks to [this post](https://github.com/alex-lechner/Traffic-Light-Classification) pointing out the compatible version) and follow the instructions in `/model/research/object_detection/g3doc/exporting_models.md` to freeze the graph, which can then be deployed to the project.
 
 ### Native Installation
 
