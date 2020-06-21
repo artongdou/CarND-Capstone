@@ -2,6 +2,7 @@
 
 ## Team
 [Chi-shing Tong](cstong@umich.edu)
+
 _Note_: I am submitting this project as individual.
 
 # Programming a Real Self-Driving Car
