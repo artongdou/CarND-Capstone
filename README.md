@@ -79,7 +79,6 @@ config = tf.estimator.RunConfig(model_dir=FLAGS.model_dir,
                                 save_checkpoints_steps=1000)
 ```
 
- config = tf.estimator.RunConfig(model_dir=FLAGS.model_dir) 
 4. To prevent checkpoint saving to trigger evaluation, simply pass `throttle_secs` to `EvalSpec` in `models/research/object_detection/model_lib.py`
 
 ``` python
