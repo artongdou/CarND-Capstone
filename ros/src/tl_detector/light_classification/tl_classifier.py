@@ -1,11 +1,13 @@
 from styx_msgs.msg import TrafficLight
-mport tensorflow as tf
+import tensorflow as tf
 import numpy as np
 import datetime
+import os
+import rospy
 
 class TLClassifier(object):
     def __init__(self):
-        PATH_TO_GRAPH = "light_classification/ssd_inception_v2_sim/frozen_inference_graph.pb"
+        PATH_TO_GRAPH = "/home/student/CarND-Capstone/ros/src/tl_detector/light_classification/ssd_inception_v2_sim/frozen_inference_graph.pb"
         self.graph = tf.Graph()
         self.threshold = .5
 
