@@ -139,6 +139,7 @@ class TLDetector(object):
             self.prev_light_loc = None
             return False
 
+        # ssd_inception_v2 is trained in RGB format
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
 
         #Get classification
@@ -171,8 +172,6 @@ class TLDetector(object):
                     min_dist = dist
                     closest_light = light
                     closest_stopline_wp_idx = stopline_wp_idx
-
-        #TODO find the closest visible traffic light (if one exists)
 
         if closest_light:
             state = self.get_light_state(closest_light)

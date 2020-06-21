@@ -10,7 +10,7 @@ class TLClassifier(object):
 #         PATH_TO_GRAPH = "/home/student/CarND-Capstone/ros/src/tl_detector/light_classification/ssd_inception_v2_sim/frozen_inference_graph.pb"
         PATH_TO_GRAPH = "/home/workspace/CarND-Capstone/ros/src/tl_detector/light_classification/ssd_inception_v2_sim/frozen_inference_graph.pb"
         self.graph = tf.Graph()
-        self.threshold = .5
+        self.min_score_threshold = .5
 
         with self.graph.as_default():
             od_graph_def = tf.GraphDef()
@@ -31,7 +31,7 @@ class TLClassifier(object):
         """Determines the color of the traffic light in the image
 
         Args:
-            image (cv::Mat): image containing the traffic light
+            image: image containing the traffic light (RGB colorspace)
 
         Returns:
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
@@ -44,8 +44,8 @@ class TLClassifier(object):
                 [self.boxes, self.scores, self.classes, self.num_detections],
                 feed_dict={self.image_tensor: img_expand})
             end = datetime.datetime.now()
-            c = end - start
-            print(c.total_seconds())
+            time_spent = end - start
+            print(time_spent.total_seconds())
 
         boxes = np.squeeze(boxes)
         scores = np.squeeze(scores)
@@ -54,7 +54,7 @@ class TLClassifier(object):
         # print('SCORES: ', scores[0])
         # print('CLASSES: ', classes[0])
 
-        if scores[0] > self.threshold:
+        if scores[0] > self.min_score_threshold:
             if classes[0] == 1:
                 print('GREEN')
                 return TrafficLight.GREEN
