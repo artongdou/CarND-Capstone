@@ -11,6 +11,88 @@ This is the project repo for the final project of the Udacity Self-Driving Car N
 
 Please use **one** of the two installation options, either native **or** docker installation.
 
+## Tensorflow Object Detection API Local Installation(Windows 10 64bit)
+
+1. Create conda environment `tf-gpu`
+
+``` shell
+conda env create --name tf-gpu
+conda activate tf-gpu
+```
+
+2. Install tensorflow-gpu version `1.14` because object detection API still haven't been updated to work seamless with tensorflow 2.x.
+
+``` shell
+conda install tensorflow-gpu=1.14
+```
+
+3. Clone [Tensorflow Models](https://github.com/tensorflow/models.git) and checkout tag `v1.13.0`. This is the version that works with tensorflow `1.14`.
+
+4. Downgrade `numpy` to version `1.17` due to incompatability issue of `1.18`.
+
+5. Follow the `installation.md` under `/object_detection/g3doc`. Note that in windows `pycocotools` need to be installed by running the below commands:
+
+``` shell
+pip3 install "git+https://github.com/philferriere/cocoapi.git#egg=pycocotools&subdirectory=PythonAPI"
+```
+
+6. Change current directory to `/models/research` and run `python setup.py install` to install the libraries.
+
+7. Change current directory to `/models/research/slim`, delete file `BUILD` and run `python setup.py install`. You can restore `BUILD` afterwards by running `git checkout HEAD -- BUILD`.
+
+8. `~/anaconda3/envs/tf-gpu/lib/sit-packages/tensorflow/python/lib/io/file_io.py` has to be patched to successfully run the evaluation step.
+
+``` python
+def recursive_create_dir_v2(path):
+  """Creates a directory and all parent/intermediate directories.
+
+  It succeeds if path already exists and is writable.
+
+  Args:
+    path: string, name of the directory to be created
+
+  Raises:
+    errors.OpError: If the operation fails.
+  """
+  # pywrap_tensorflow.RecursivelyCreateDir(compat.as_bytes(path))
+  os.makedirs(dirname, exist_ok=True)
+```
+
+## Tips
+
+1. Add following to `main()` in `models/research/object_detection/model_main.py`. This prevent tensorflow allocating all the memories at once and only allow GPU to use as much memory as needed.
+
+``` python
+session_config = tf.ConfigProto()
+session_config.gpu_options.allow_growth = True
+config = tf.estimator.RunConfig(model_dir=FLAGS.model_dir, session_config=session_config)
+```
+
+2. Add `tf.logging.set_verbosity(tf.logging.INFO)` to `models/research/object_detection/model_main.py` will allow you see the training progress every 100 steps in terminal.
+
+3. To adjust the frequency of saving checkpoint, you can simply add `save_checkpoints_secs` or `save_checkpoints_steps` in this line.
+`models/research/object_detection/model_main.py`.
+
+``` python
+config = tf.estimator.RunConfig(model_dir=FLAGS.model_dir, 
+                                session_config=session_config,
+                                save_checkpoints_steps=1000)
+```
+
+ config = tf.estimator.RunConfig(model_dir=FLAGS.model_dir) 
+4. To prevent checkpoint saving to trigger evaluation, simply pass `throttle_secs` to `EvalSpec` in `models/research/object_detection/model_lib.py`
+
+``` python
+eval_specs.append(
+        tf.estimator.EvalSpec(
+          name=eval_spec_name,
+          input_fn=eval_input_fn,
+          steps=None,
+          exporters=exporter,
+          throttle_secs=864000))
+```
+5. It's possible to train in tensorflow `1.14` and freeze the graph in `1.4` to be satisfy the Udacity requirement. All you need to do is obtain the `.config` and `model.ckpt`. Create a new conda environment with tensorflow `1.4` installed. Checkout commit `f7e99c08` in `models` (thanks to [this post](https://github.com/alex-lechner/Traffic-Light-Classification) pointing out the compatible version) and follow the instructions in `/model/research/object_detection/g3doc/exporting_models.md` to freeze the graph, which can then be deployed to the project.
+
 ### Native Installation
 
 * Be sure that your workstation is running Ubuntu 16.04 Xenial Xerus or Ubuntu 14.04 Trusty Tahir. [Ubuntu downloads can be found here](https://www.ubuntu.com/download/desktop).
